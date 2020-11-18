@@ -37,3 +37,8 @@ The "A Dance of Fire and Ice" Auto Player (Frame sync Keyboard Recorder)
 |:---:|:---:|
 R | 키보드 입력 녹화
 E | 저장된 녹화 데이터로 오토플레이
+
+### 종속성<br/>
+InputSimulatorPlus<br/>
+NeatInput.Windows<br/>
+ProcessMemoryReader<br/>
