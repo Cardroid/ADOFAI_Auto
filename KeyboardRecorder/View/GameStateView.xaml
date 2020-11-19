@@ -22,6 +22,8 @@
                 Height="Auto" />
             <RowDefinition
                 Height="Auto" />
+            <RowDefinition
+                Height="Auto" />
             <RowDefinition />
         </Grid.RowDefinitions>
 
@@ -50,6 +52,15 @@
                 Content="게임 프레임: " />
             <Label
                 Content="{Binding GameFrame}" />
+        </StackPanel>
+
+        <StackPanel
+            Orientation="Horizontal"
+            Grid.Row="3">
+            <Label
+                Content="입력 오프셋: " />
+            <Label
+                Content="{Binding InputOffset}" />
         </StackPanel>
     </Grid>
 </UserControl>

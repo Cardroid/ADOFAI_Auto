@@ -16,7 +16,7 @@ namespace ADOFAI_Auto.Core
     {
         public KeyboardRecorder()
         {
-            KeyboardLogs = new List<KeyboardLog>();
+            KeyboardLogs = new KeyList();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -35,8 +35,19 @@ namespace ADOFAI_Auto.Core
             }
         }
 
+        public int FirstOffset
+        {
+            get => KeyboardLogs.InputOffset;
+            set => KeyboardLogs.InputOffset = value;
+        }
+        public int GlobalOffset
+        {
+            get => KeyboardLogs.GlobalOffset;
+            set => KeyboardLogs.GlobalOffset = value;
+        }
+
         private KeyboardEventLogger KeyboardEventLogger;
-        private List<KeyboardLog> KeyboardLogs { get; }
+        private KeyList KeyboardLogs { get; }
 
         private int LastLogFrame;
 
@@ -46,6 +57,8 @@ namespace ADOFAI_Auto.Core
                 return;
 
             Release();
+
+            KeyboardLogs.InputOffset = MemoryReader.GetInputOffset();
 
             if (keyboardEventLogger != null)
             {
@@ -103,15 +116,15 @@ namespace ADOFAI_Auto.Core
                 KeyboardLogs.Add(new KeyboardLog(delays[i]));
         }
 
-        public void RecordClear()
+        public void RecordClear(bool isOffsetClear = true)
         {
             if (!IsRecording)
             {
-                KeyboardLogs.Clear();
+                KeyboardLogs.Clear(isOffsetClear);
                 OnPropertyChanged("RecordCleared");
             }
         }
 
-        public IReadOnlyList<KeyboardLog> GetRecord() => KeyboardLogs;
+        public KeyList GetRecord() => KeyboardLogs;
     }
 }

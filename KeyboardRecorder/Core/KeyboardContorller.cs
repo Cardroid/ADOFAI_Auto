@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -74,19 +76,34 @@ namespace ADOFAI_Auto.Core
                     if (e.Key == Keys.E)
                         Player.Stop();
                 }
-                else if (!IsRecording)
+                else if (IsRecording)
                 {
                     if (e.Key == Keys.R)
-                        Recorder.StartRecord(KeyboardEventLogger);
-                    else if (e.Key == Keys.E)
-                        Player.Play(Recorder.GetRecord().ToArray());
-                    else if (e.Key == Keys.Delete)
-                        Recorder.RecordClear();
+                        Recorder.StopRecord();
                 }
                 else
                 {
                     if (e.Key == Keys.R)
-                        Recorder.StopRecord();
+                        Recorder.StartRecord(KeyboardEventLogger);
+                    else if (e.Key == Keys.E)
+                        Player.Play(Recorder.GetRecord());
+                    else if (e.Key == Keys.Delete)
+                        Recorder.RecordClear();
+                    else if (e.Key == Keys.Q)
+                    {
+                        if (KeyboardLogIOManager.Save("testData.apmd", Recorder.GetRecord()))
+                            Debug.WriteLine("Save done.");
+                        else
+                            Debug.WriteLine("Save fail.");
+                    }
+                    else if (e.Key == Keys.W)
+                    {
+                        if(KeyboardLogIOManager.Load("testData.apmd", Recorder.GetRecord()))
+                            Debug.WriteLine("Load done.");
+                        else
+                            Debug.WriteLine("Load fail.");
+
+                    }
                 }
             }
         }

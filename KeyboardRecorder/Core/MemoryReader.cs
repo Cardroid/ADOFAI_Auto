@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 using ProcessMemoryScanner;
 
@@ -7,10 +8,16 @@ namespace ADOFAI_Auto.Core
 {
     public static class MemoryReader
     {
+        static MemoryReader()
+        {
+            FrameSync();
+        }
+
         private static MemoryScanner MS;
         private static Process TargetProcess;
         private static MemoryAddress FrameAddress;
         private static MemoryAddress IsPauseAddress;
+        private static MemoryAddress InputOffset;
 
         private static bool Init()
         {
@@ -25,8 +32,13 @@ namespace ADOFAI_Auto.Core
             {
                 TargetProcess = processes[0];
                 MS = new MemoryScanner(p => p.ProcessName == TargetProcess.ProcessName);
-                FrameAddress = new MemoryAddress(GetModuleBaseAddress("UnityPlayer.dll") + 0x0179C468, new int[] { 0x138, 0x30, 0x28, 0xC78 });
+
+                //FrameAddress = new MemoryAddress(new IntPtr(0x1E52CFC38B0), null);
+                FrameAddress = new MemoryAddress(GetModuleBaseAddress("UnityPlayer.dll") + 0x017EEDD0, new int[] { 0x3D8, 0x0, 0x578, 0xE30 });
+                //FrameAddress = new MemoryAddress(GetModuleBaseAddress("UnityPlayer.dll") + 0x0173E000, new int[] { 0x0, 0x20, 0x118 });
+
                 IsPauseAddress = new MemoryAddress(GetModuleBaseAddress("UnityPlayer.dll") + 0x0179C458, new int[] { 0x170, 0x18, 0x18, 0x94 });
+                InputOffset = new MemoryAddress(GetModuleBaseAddress("UnityPlayer.dll") + 0x01731010, new int[] { 0x270, 0x10, 0xA50, 0x70, 0x7C0 });
                 return true;
             }
             catch
@@ -52,10 +64,10 @@ namespace ADOFAI_Auto.Core
             return addr;
         }
 
-        private static T Reader<T>(MemoryAddress memoryAddress) where T : IConvertible
+        private static IntPtr GetPointerAddress(MemoryAddress memoryAddress)
         {
             if (memoryAddress.Offsets == null)
-                return MS.ReadMemory<T>(memoryAddress.Address);
+                return memoryAddress.Address;
 
             IntPtr addr = MS.ReadMemory<IntPtr>(memoryAddress.Address);
             for (int i = 0; i < memoryAddress.Offsets.Length; i++)
@@ -65,8 +77,7 @@ namespace ADOFAI_Auto.Core
                     break;
                 addr = MS.ReadMemory<IntPtr>(addr);
             }
-
-            return MS.ReadMemory<T>(addr);
+            return addr;
         }
 
         private static T ReadMemory<T>(MemoryAddress memoryAddress) where T : IConvertible
@@ -74,16 +85,49 @@ namespace ADOFAI_Auto.Core
             if ((IsProcessNullCheck() && !Init()) || memoryAddress == null)
                 return default;
 
-            //MS.SuspendProcess();
-            //var result = Reader<T>(memoryAddress);
-            //MS.ResumeProcess();
-            //return result;
-
-            return Reader<T>(memoryAddress);
+            if (HighAccuracyMode)
+            {
+                MS.SuspendProcess();
+                var result = MS.ReadMemory<T>(GetPointerAddress(memoryAddress));
+                MS.ResumeProcess();
+                return result;
+            }
+            else
+                return MS.ReadMemory<T>(GetPointerAddress(memoryAddress));
         }
 
+        private static void WriteMemory<T>(MemoryAddress memoryAddress, T value) where T : IConvertible
+        {
+            if ((IsProcessNullCheck() && !Init()) || memoryAddress == null)
+                return;
+
+            if (HighAccuracyMode)
+            {
+                MS.SuspendProcess();
+                MS.WriteMemory(GetPointerAddress(memoryAddress), value);
+                MS.ResumeProcess();
+                return;
+            }
+            else
+                MS.WriteMemory(GetPointerAddress(memoryAddress), value);
+        }
+
+        public static bool HighAccuracyMode = false;
+
         public static bool IsPause() => ReadMemory<bool>(IsPauseAddress);
-        public static int GetFrame() => ReadMemory<int>(FrameAddress);
+
+        private static async void FrameSync()
+        {
+            while (true)
+            {
+                PreloadFrame = ReadMemory<int>(FrameAddress);
+                await Task.Delay(1);
+            }
+        }
+        private static int PreloadFrame = 0;
+        public static int GetFrame() => PreloadFrame;
+        public static int GetInputOffset() => ReadMemory<int>(InputOffset);
+        public static void SetInputOffset(int value) => WriteMemory(InputOffset, value);
 
         private class MemoryAddress
         {

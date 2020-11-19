@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using ADOFAI_Auto.Core.Model;
@@ -29,47 +30,82 @@ namespace ADOFAI_Auto.Core
             }
         }
 
-        public async void Play(KeyboardLog[] keyboardLogs)
+        private int ErrorFrame = 0;
+        private int OriginalFrame = 0;
+
+        private int BeforeInputOffset = 0;
+        private int GlobalOffset = 0;
+
+        private Thread RunThread;
+
+        public void Play(KeyList keyboardLogs)
         {
-            if (keyboardLogs == null || IsPlaying)
+            if (RunThread != null)
                 return;
 
-            IsPlaying = true;
-            for (int i = 0; i < keyboardLogs.Length; i++)
+            RunThread = new Thread(() =>
             {
-                if (IsSuspendPlay)
-                    break;
-                await KeyLogHandle(keyboardLogs[i]);
-            }
-            IsSuspendPlay = false;
-            IsPlaying = false;
+                if (keyboardLogs == null || IsPlaying)
+                    return;
+
+                IsPlaying = true;
+                ErrorFrame = 0;
+
+                BeforeInputOffset = MemoryReader.GetInputOffset();
+                MemoryReader.SetInputOffset(keyboardLogs.InputOffset);
+                GlobalOffset = keyboardLogs.GlobalOffset;
+
+                OriginalFrame = MemoryReader.GetFrame();
+                for (int i = 0; i < keyboardLogs.Count; i++)
+                {
+                    if (IsSuspendPlay)
+                        break;
+                    KeyLogHandle(keyboardLogs[i], GlobalOffset);
+                }
+                IsSuspendPlay = false;
+                IsPlaying = false;
+
+                RunThread = null;
+            });
+
+            RunThread.Start();
         }
 
-        public void Stop() => IsSuspendPlay = true;
-
-        private async Task KeyLogHandle(KeyboardLog keyboardLog)
+        public void Stop()
         {
-            int beforeFrame = MemoryReader.GetFrame();
-            int errorFrame = await FrameWait(keyboardLog.FrameDelay);
+            IsSuspendPlay = true;
+            MemoryReader.SetInputOffset(BeforeInputOffset);
+        }
+
+        private void KeyLogHandle(KeyboardLog keyboardLog, int offset = 0)
+        {
+            int delay = keyboardLog.FrameDelay + offset;
+            FrameWait(delay);
             KeyboardInput.PressKey();
-            KeyEvent?.Invoke(null, new KeyboardLogInfo(MemoryReader.GetFrame(), beforeFrame, errorFrame, keyboardLog.FrameDelay, "Auto", "Down"));
+            KeyEvent?.Invoke(null, new KeyboardLogInfo(MemoryReader.GetFrame(), -1, ErrorFrame, delay, "Auto", "Down"));
         }
 
-        private async Task<int> FrameWait(int frame, int frmaeReadDelay = 1)
+        private int FrameReadDelay = 1;
+        private bool IsFixErrorFrame = true;
+
+        private void FrameWait(int frame)
         {
-            int originalFrame = MemoryReader.GetFrame();
             int newFrame;
             int CalculateDelay;
+
+            if (IsFixErrorFrame)
+                frame -= ErrorFrame;
 
             do
             {
                 newFrame = MemoryReader.GetFrame();
-                CalculateDelay = newFrame - originalFrame;
+                CalculateDelay = newFrame - OriginalFrame;
                 if (CalculateDelay >= frame) break;
-                await Task.Delay(frmaeReadDelay);
+                Thread.Sleep(10);
             }
             while (!IsSuspendPlay);
-            return CalculateDelay - frame; /* Return Error Frame */
+            OriginalFrame = newFrame;
+            ErrorFrame = CalculateDelay - frame;
         }
     }
 }

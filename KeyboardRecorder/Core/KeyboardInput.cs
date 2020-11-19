@@ -17,16 +17,6 @@ namespace ADOFAI_Auto.Core
 
         private static KeyboardSimulator Simulator;
 
-        private static bool Switch;
-
-        public static void PressKey()
-        {
-            if (Switch)
-                Simulator.KeyPress(WindowsInput.Native.VirtualKeyCode.VK_A);
-            else
-                Simulator.KeyPress(WindowsInput.Native.VirtualKeyCode.VK_B);
-
-            Switch = !Switch;
-        }
+        public static void PressKey() => Simulator.KeyPress(WindowsInput.Native.VirtualKeyCode.VK_A);
     }
 }

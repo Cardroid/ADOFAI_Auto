@@ -90,6 +90,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Core\KeyboardContorller.cs" />
+    <Compile Include="Core\KeyboardLogIOManager.cs" />
     <Compile Include="Core\KeyboardPlayer.cs" />
     <Compile Include="Core\Model\BaseViewModel.cs" />
     <Compile Include="Core\KeyboardInput.cs" />
@@ -98,6 +99,7 @@
     <Compile Include="Core\Model\KeyboardEventLogger.cs" />
     <Compile Include="Core\Model\KeyboardLog.cs" />
     <Compile Include="Core\Model\KeyboardLogInfo.cs" />
+    <Compile Include="Core\Model\KeyList.cs" />
     <Compile Include="ViewModel\GameStateViewModel.cs" />
     <Compile Include="ViewModel\KeyboardStateViewModel.cs" />
     <Compile Include="View\GameStateView.xaml.cs">

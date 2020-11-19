@@ -20,10 +20,15 @@ namespace ADOFAI_Auto.ViewModel
 
         private async void GameStateGetter()
         {
+            //int beforeFrame;
             while (true)
             {
                 IsGamePause = MemoryReader.IsPause();
+                //beforeFrame = GameFrame;
                 GameFrame = MemoryReader.GetFrame();
+                //System.Diagnostics.Debug.WriteLine($"Frame Gap: {GameFrame - beforeFrame}");
+                //System.Diagnostics.Debug.WriteLine($"GameFrame: {GameFrame}");
+                InputOffset = MemoryReader.GetInputOffset();
                 await Task.Delay(100);
             }
         }
@@ -59,6 +64,17 @@ namespace ADOFAI_Auto.ViewModel
             {
                 _GameFrame = value;
                 OnPropertyChanged("GameFrame");
+            }
+        }
+        
+        private int _InputOffset = -1;
+        public int InputOffset
+        {
+            get => _InputOffset;
+            set
+            {
+                _InputOffset = value;
+                OnPropertyChanged("InputOffset");
             }
         }
 
